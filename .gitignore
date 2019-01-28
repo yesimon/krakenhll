@@ -5,3 +5,15 @@
 /tests/install
 *.dSYM
 \.idea/
+
+src/set_lcas
+src/classify
+src/build_taxdb
+src/classifyExact
+src/count_unique
+src/dump_taxdb
+src/query_taxdb
+src/read_uid_mapping
+src/grade_classification
+src/test_hll_on_db
+src/dump_db_kmers

@@ -1,6 +1,7 @@
 /*
  * Original file Copyright 2013-2015, Derrick Wood <dwood@cs.jhu.edu>
- * Portions (c) 2017-2018, Florian Breitwieser <fbreitwieser@jhu.edu> as part of KrakenUniq
+ * Portions (c) 2017-2018, Florian Breitwieser <fbreitwieser@jhu.edu> as part of
+ * KrakenUniq
  *
  * This file is part of the Kraken taxonomic sequence classification system.
  *
@@ -17,51 +18,64 @@
  * You should have received a copy of the GNU General Public License
  * along with Kraken.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef KRAKENUTIL_HPP
-#define KRAKENUTIL_HPP
+#pragma once
 
 #include "kraken_headers.hpp"
 #include <unordered_map>
 
 namespace kraken {
-  // Build a map of node to parent from an NCBI taxonomy nodes.dmp file
-  std::unordered_map<uint32_t, uint32_t> build_parent_map(std::string filename);
+using std::ostream;
+using std::string;
 
-  // Return lowest common ancestor of a and b
-  // LCA(0,x) = LCA(x,0) = x
-  // Default ancestor is 1 (root of tree)
-uint32_t lca(const std::unordered_map<uint32_t, uint32_t> &parent_map, uint32_t a, uint32_t b);
+inline bool ends_with(std::string const &value, std::string const &ending);
+class managed_ostream {
+public:
+  managed_ostream &operator=(const managed_ostream &) = delete;
+  managed_ostream(const managed_ostream &) = delete;
 
+  managed_ostream();
+  managed_ostream(ostream *managed_ostream);
+  managed_ostream(const string &file, bool use = true, bool append = false);
+  ~managed_ostream();
+  ostream &operator*();
+  ostream *operator->();
 
+private:
+  ostream *s;
+};
 
-  // Resolve classification tree
-  uint32_t resolve_tree(const std::unordered_map<uint32_t, uint32_t> &hit_counts,
-                        const std::unordered_map<uint32_t, uint32_t> &parent_map);
+// Build a map of node to parent from an NCBI taxonomy nodes.dmp file
+std::unordered_map<uint32_t, uint32_t> build_parent_map(std::string filename);
 
-  class KmerScanner {
-    public:
+// Return lowest common ancestor of a and b
+// LCA(0,x) = LCA(x,0) = x
+// Default ancestor is 1 (root of tree)
+uint32_t lca(const std::unordered_map<uint32_t, uint32_t> &parent_map,
+             uint32_t a, uint32_t b);
 
-    KmerScanner(std::string &seq, size_t start=0, size_t finish=~0);
-    uint64_t *next_kmer();  // NULL when seq exhausted
-    bool ambig_kmer();  // does last returned kmer have non-ACGT?
+// Resolve classification tree
+uint32_t resolve_tree(const std::unordered_map<uint32_t, uint32_t> &hit_counts,
+                      const std::unordered_map<uint32_t, uint32_t> &parent_map);
 
+class KmerScanner {
+public:
+  KmerScanner(std::string &seq, size_t start = 0, size_t finish = ~0);
+  uint64_t *next_kmer(); // NULL when seq exhausted
+  bool ambig_kmer();     // does last returned kmer have non-ACGT?
 
-    static uint8_t get_k();
-    // MUST be called before first invocation of KmerScanner()
-    static void set_k(uint8_t n);
+  static uint8_t get_k();
+  // MUST be called before first invocation of KmerScanner()
+  static void set_k(uint8_t n);
 
-    private:
-    std::string *str;
-    size_t curr_pos, pos1, pos2;
-    uint64_t kmer;  // the kmer, address is returned (don't share b/t thr.)
-    uint32_t ambig; // is there an ambiguous nucleotide in the kmer?
-    int64_t loaded_nt;
+private:
+  std::string *str;
+  size_t curr_pos, pos1, pos2;
+  uint64_t kmer;  // the kmer, address is returned (don't share b/t thr.)
+  uint32_t ambig; // is there an ambiguous nucleotide in the kmer?
+  int64_t loaded_nt;
 
-    static uint8_t k;  // init. to 0 b/c static
-    static uint64_t kmer_mask;
-    static uint32_t mini_kmer_mask;
-  };
-}
-
-#endif // ndef KRAKENUTIL_HPP
+  static uint8_t k; // init. to 0 b/c static
+  static uint64_t kmer_mask;
+  static uint32_t mini_kmer_mask;
+};
+} // namespace kraken

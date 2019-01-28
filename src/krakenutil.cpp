@@ -21,12 +21,51 @@
 #include "assert_helpers.h"
 #include "kraken_headers.hpp"
 #include "krakenutil.hpp"
+#include "gzstream.h"
 #include <unordered_set>
 #include<algorithm>
 
 using namespace std;
 
 namespace kraken {
+
+  inline bool ends_with(std::string const & value, std::string const & ending)
+  {
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+  }
+
+  managed_ostream::managed_ostream() : s() {}
+  managed_ostream::managed_ostream(ostream* managed_ostream) : s(managed_ostream) {}
+  managed_ostream::managed_ostream(const string& file, bool use, bool append) {
+    if (!use || file.empty()) {
+      s = nullptr;
+    } else if (file == "-") {
+      s = &cout;
+    } else if (ends_with(file, ".gz")) {
+      s = new ogzstream(file.c_str());
+      s->exceptions(ifstream::failbit | ifstream::badbit);
+    } else {
+      s = append ? new ofstream(file.c_str(), std::ofstream::app)
+        : new ofstream(file.c_str());
+      s->exceptions(ifstream::failbit | ifstream::badbit);
+    }
+  }
+  managed_ostream::~managed_ostream()
+  {
+    if (s && s->rdbuf() != std::cout.rdbuf()) {
+      delete s;
+    }
+  }
+  ostream& managed_ostream::operator* ()
+  {
+    return *s;
+  }
+
+  ostream* managed_ostream::operator-> ()
+  {
+    return s;
+  }
 
   // Build a node->parent unordered_map from NCBI Taxonomy nodes.dmp file
   unordered_map<uint32_t, uint32_t> build_parent_map(string filename) {
@@ -53,7 +92,7 @@ namespace kraken {
   // LCA(0,x) = LCA(x,0) = x
   // Default ancestor is 1 (root of tree)
   uint32_t lca(const unordered_map<uint32_t, uint32_t> &parent_map,
-    uint32_t a, uint32_t b)
+               uint32_t a, uint32_t b)
   {
     if (a == 0 || b == 0)
       return a ? a : b;
@@ -65,7 +104,7 @@ namespace kraken {
       if (a_it == parent_map.end()) {
         cerr << "No parent for " << a << "!\n";
         break;
-      } 
+      }
       a = a_it->second;
     }
     while (b > 1) {
@@ -76,7 +115,7 @@ namespace kraken {
       if (b_it == parent_map.end()) {
         cerr << "No parent for " << b << "!\n";
         break;
-      } 
+      }
       b = b_it->second;
     }
     return 1;
@@ -89,8 +128,8 @@ namespace kraken {
     // create a path from a to the root
     std::vector<uint32_t> a_path;
     do {
-      if (a == b) 
-        return a; 
+      if (a == b)
+        return a;
       a_path.push_back(a);
       a = parent_map.at(a);
     } while (a != a_path.back());
@@ -205,36 +244,36 @@ namespace kraken {
     bool skip_pos = false;
     if (curr_pos >= pos2)
       return NULL;
-    if (loaded_nt)  
+    if (loaded_nt)
       loaded_nt--;
     while (loaded_nt < k) {
       if (skip_pos) {
-	skip_pos = false;
+        skip_pos = false;
       } else {
         loaded_nt++;
         kmer <<= 2;
         ambig <<= 1;
       }
       switch ((*str)[curr_pos++]) {
-        case 'A': case 'a':
-          break;
-        case 'C': case 'c':
-          kmer |= 1;
-          break;
-        case 'G': case 'g':
-          kmer |= 2;
-          break;
-        case 'T': case 't':
-          kmer |= 3;
-          break;
-	case '\n': case '\r':
-	  --loaded_nt;
-	  skip_pos = true;
-	  continue;
-	  break;
-        default:
-          ambig |= 1;
-          break;
+      case 'A': case 'a':
+        break;
+      case 'C': case 'c':
+        kmer |= 1;
+        break;
+      case 'G': case 'g':
+        kmer |= 2;
+        break;
+      case 'T': case 't':
+        kmer |= 3;
+        break;
+      case '\n': case '\r':
+        --loaded_nt;
+        skip_pos = true;
+        continue;
+        break;
+      default:
+        ambig |= 1;
+        break;
       }
       kmer &= kmer_mask;
       ambig &= mini_kmer_mask;

@@ -11,23 +11,24 @@ FOPENMP=
 endif
 
 
-CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++11 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS} 
-#CXXFLAGS = -Wall -std=c++11 $(FOPENMP) -O3 -Wfatal-errors
+CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++11 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
 PROGS1 = classify classifyExact db_sort set_lcas db_shrink build_taxdb read_uid_mapping count_unique dump_taxdb query_taxdb
 TEST_PROGS = grade_classification test_hll_on_db dump_db_kmers
-#PROGS = $(PROGS1) $(TEST_PROGS)
 PROGS = $(PROGS1)
-#LIBFLAGS = -L. -lz -lgzstream ${LDFLAGS}
-LIBFLAGS = -L. -lz ${LDFLAGS}
+LDFLAGS = -L.
+LDLIBS=-lz
 
-.PHONY: all install clean
+.PHONY: all install clean debug
 
 all: $(PROGS1)
+
+debug: CXXFLAGS += -g -Og
+debug: $(PROGS1)
 
 allall: $(PROGS1) $(TEST_PROGS)
 
 install: $(PROGS)
-	cp $(PROGS) $(KRAKEN_DIR)/
+	install $(PROGS) $(KRAKEN_DIR)/
 
 clean:
 	rm -rf $(PROGS) $(TEST_PROGS) *.o *.dSYM *.gch
@@ -36,7 +37,7 @@ db_shrink: krakendb.o quickfile.o
 
 db_sort: krakendb.o quickfile.o
 
-set_lcas: krakendb.o quickfile.o krakenutil.o seqreader.o uid_mapping.o
+set_lcas: set_lcas.cpp krakendb.o quickfile.o krakenutil.o seqreader.o uid_mapping.o gzstream.o
 
 grade_classification: #taxdb.hpp report-cols.hpp
 
@@ -51,10 +52,10 @@ test_hll_on_db: krakendb.o hyperloglogplus.o quickfile.o
 dump_db_kmers: krakendb.o quickfile.o
 
 classify: classify.cpp krakendb.o quickfile.o krakenutil.o seqreader.o uid_mapping.o gzstream.o hyperloglogplus.o
-	$(CXX) $(CXXFLAGS) -o classify $^ $(LIBFLAGS)
+	$(CXX) $(CXXFLAGS) -o classify $^ $(LDFLAGS) $(LDLIBS)
 
 classifyExact: classify.cpp krakendb.o quickfile.o krakenutil.o seqreader.o uid_mapping.o gzstream.o hyperloglogplus.o
-	$(CXX) $(CXXFLAGS) -DEXACT_COUNTING -o classifyExact $^ $(LIBFLAGS)
+	$(CXX) $(CXXFLAGS) -DEXACT_COUNTING -o classifyExact $^ $(LDFLAGS) $(LDLIBS)
 
 query_taxdb: #taxdb.hpp
 
@@ -62,9 +63,9 @@ build_taxdb: quickfile.o #taxdb.hpp report-cols.hpp
 
 make_seqid_to_taxid_map: quickfile.o
 
-read_uid_mapping: quickfile.o krakenutil.o uid_mapping.o
+read_uid_mapping: read_uid_mapping.cpp quickfile.o krakenutil.o uid_mapping.o gzstream.o
 
-krakenutil.o: krakenutil.cpp krakenutil.hpp taxdb.hpp report-cols.hpp
+krakenutil.o: krakenutil.cpp krakenutil.hpp taxdb.hpp report-cols.hpp gzstream/gzstream.h
 	$(CXX) $(CXXFLAGS) -c krakenutil.cpp
 
 krakendb.o: krakendb.cpp krakendb.hpp quickfile.hpp

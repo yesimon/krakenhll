@@ -24,6 +24,7 @@
 #define _XOPEN_SOURCE 1
 #endif
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -31,6 +32,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #ifdef _OPENMP

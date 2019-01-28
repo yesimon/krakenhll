@@ -261,6 +261,7 @@ class TaxonomyDB {
 
     void setGenomeSizes(const std::unordered_map<TAXID, uint64_t> & genomeSizes);
     void readGenomeSizes(string file);
+    void readGenomeSizes(istream& buf);
     void setGenomeSize(const TAXID taxid, const uint64_t genomeSize);
 
     void printReport();
@@ -883,6 +884,22 @@ void TaxonomyDB<TAXID>::readGenomeSizes(string file) {
 
   cerr << " done" << endl;
 }
+
+template<typename TAXID>
+void TaxonomyDB<TAXID>::readGenomeSizes(istream& buf) {
+  //for (auto entry_it = entries.begin(); entry_it != entries.end(); ++entry_it) {
+  //  entry_it->second.genomeSize = 0;
+  //  entry_it->second.genomeSizeOfChildren = 0;
+  //}
+  TAXID taxonomyID;
+  uint64_t size;
+  while (!buf.eof()) {
+    buf >> taxonomyID >> size;
+    setGenomeSize(taxonomyID, size);
+  }
+  cerr << " done" << endl;
+}
+
 
 /*
    template<typename TAXID>

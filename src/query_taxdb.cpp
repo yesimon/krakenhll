@@ -40,13 +40,13 @@ void print_LCA(uint32_t taxID);
 void print_Rank(uint32_t taxID);
 void print_Lineage(uint32_t taxID);
 
-size_t parse_command_line(int argc, char **argv);
+int parse_command_line(int argc, char **argv);
 void usage(int exit_code=EX_USAGE);
 
 TaxonomyDB<uint32_t> taxdb;
 
 int main(int argc, char **argv) {
-  size_t optind = parse_command_line(argc, argv);
+  int optind = parse_command_line(argc, argv);
   uint32_t taxID;
 
   for (;optind < static_cast<unsigned>(argc); ++optind) {
@@ -76,7 +76,7 @@ void process_taxID(uint32_t taxID) {
   }
 }
 
-size_t parse_command_line(int argc, char **argv) {
+int parse_command_line(int argc, char **argv) {
   int opt;
 
   if (argc > 1 && strcmp(argv[1], "-h") == 0)
@@ -120,4 +120,3 @@ void usage(int exit_code) {
        << endl;
   exit(exit_code);
 }
-

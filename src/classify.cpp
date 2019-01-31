@@ -28,6 +28,7 @@
 #include "taxdb.hpp"
 #include "uid_mapping.hpp"
 #include <sstream>
+#include <stdlib.h>
 
 const size_t DEF_WORK_UNIT_SIZE = 500000;
 int New_taxid_start = 1000000000;
@@ -101,6 +102,7 @@ vector<string> Unclassified_output_files;
 size_t Work_unit_size = DEF_WORK_UNIT_SIZE;
 TaxonomyDB<uint32_t> taxdb;
 static vector<KrakenDB *> KrakenDatabases(DB_filenames.size());
+void loadCatKrakenDB(const string& filename, TaxonomyDB<uint32_t> &taxdb);
 
 struct db_status {
   db_status() : current_bin_key(0), current_min_pos(1), current_max_pos(0) {}
@@ -131,33 +133,56 @@ void loadKrakenDB(KrakenDB &database, string DB_filename,
   database.set_index(&db_index);
 }
 
-void loadCatKrakenDB(string filename, TaxonomyDB<uint32_t> &taxdb) {
-  ifstream in(filename.c_str(), ios::in | ios::binary);
-  string counts_size_s;
-  string idx_size_s;
-  string db_size_s;
-  std::getline(in, counts_size_s);
-  unsigned long long counts_size = std::stoull(counts_size_s);
-  std::getline(in, idx_size_s);
-  unsigned long long idx_size = std::stoull(idx_size_s);
-  std::getline(in, db_size_s);
-  unsigned long long db_size = std::stoull(db_size_s);
+void loadCatKrakenDB(const string& filename, TaxonomyDB<uint32_t> &taxdb) {
 
-  std::string counts_s(counts_size, '\0');
-  in.read(&counts_s[0], counts_size);
-  std::stringstream ss(counts_s);
-  taxdb.readGenomeSizes(ss);
+  struct stat sb;
+  if (stat(filename.c_str(), &sb) < 0) {
+    err(EX_OSERR, "unable to fstat %s", filename.c_str());
+  }
+  if(S_ISREG(sb.st_mode) != 0) {
+    auto fd = open(filename.c_str(), O_RDONLY, 0666);
+    auto fptr = (char *)mmap(0, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    unsigned long long counts_size, idx_size;
+    char* c_end;
+    counts_size = strtoull(fptr, &c_end, 10);
+    idx_size = strtoull(c_end, &c_end, 10);
+    strtoull(c_end, &c_end, 10);
+    ++c_end;
 
-  char *buffer;
-  buffer = (char *)malloc(idx_size);
-  in.read(buffer, idx_size);
-  KrakenDBIndex *db_index = new KrakenDBIndex(buffer);
+    c_end[counts_size - 1] = '\0';
+    taxdb.readGenomeSizes(c_end);
+    KrakenDBIndex *db_index = new KrakenDBIndex(c_end + counts_size);
+    KrakenDB *database = new KrakenDB(c_end + counts_size + idx_size);
+    database->set_index(db_index);
+    KrakenDatabases.push_back(database);
+  } else {
+    ifstream in(filename.c_str(), ios::in | ios::binary);
+    string counts_size_s;
+    string idx_size_s;
+    string db_size_s;
+    std::getline(in, counts_size_s);
+    unsigned long long counts_size = std::stoull(counts_size_s);
+    std::getline(in, idx_size_s);
+    unsigned long long idx_size = std::stoull(idx_size_s);
+    std::getline(in, db_size_s);
+    unsigned long long db_size = std::stoull(db_size_s);
 
-  buffer = (char *)malloc(db_size);
-  in.read(buffer, db_size);
-  KrakenDB *database = new KrakenDB(buffer);
-  database->set_index(db_index);
-  KrakenDatabases.push_back(database);
+    std::string counts_s(counts_size, '\0');
+    in.read(&counts_s[0], counts_size);
+    std::stringstream ss(counts_s);
+    taxdb.readGenomeSizes(ss);
+
+    char *buffer;
+    buffer = (char *)malloc(idx_size);
+    in.read(buffer, idx_size);
+    KrakenDBIndex *db_index = new KrakenDBIndex(buffer);
+
+    buffer = (char *)malloc(db_size);
+    in.read(buffer, db_size);
+    KrakenDB *database = new KrakenDB(buffer);
+    database->set_index(db_index);
+    KrakenDatabases.push_back(database);
+  }
 }
 
 int main(int argc, char **argv) {
@@ -243,8 +268,14 @@ int main(int argc, char **argv) {
                                       Print_classified);
     managed_ostream unclassified_output(Unclassified_output_files[j],
                                         Print_unclassified);
-    cerr << "Writing kraken output to: " << Kraken_output_files[j] << endl;
-    managed_ostream kraken_output(Kraken_output_files[j], Print_kraken);
+    // cerr << "Writing kraken output to: " << Kraken_output_files[j] << endl;
+    string kraken_output_file;
+    if (Kraken_output_files.size() == n_inputs) {
+      kraken_output_file = Kraken_output_files[j];
+    } else {
+      kraken_output_file = "-";
+    }
+    managed_ostream kraken_output(kraken_output_file, Print_kraken);
 
     // cout << Print_kraken << endl;
     // cerr << "Print_kraken: " << Print_kraken << "; Print_kraken_report: " <<
@@ -265,31 +296,33 @@ int main(int argc, char **argv) {
       gettimeofday(&tv1, NULL);
       std::cerr << "Writing report file to " << Report_output_files[j]
                 << "  ..\n";
-      // for (size_t i = 0; i < DB_filenames.size(); ++i) {
-      //   const auto fname = DB_filenames[i] + ".counts";
-      //   ifstream ifs(fname);
-      //   bool counts_file_gd = false;
-      //   if (ifs.good()) {
-      //     if (ifs.peek() == std::ifstream::traits_type::eof()) {
-      //       cerr << "Kmer counts file is empty - trying to regenerate ..." <<
-      //       endl;
-      //     } else {
-      //       ifs.close();
-      //       counts_file_gd = true;
-      //     }
-      //   }
-      //   if (!counts_file_gd) {
-      //     ofstream ofs(fname);
-      //     cerr << "Writing kmer counts to " << fname << "... [only once for
-      //     this database, may take a while] " << endl; auto counts =
-      //     KrakenDatabases[i]->count_taxons(); for (auto it = counts.begin();
-      //     it != counts.end(); ++it) {
-      //       ofs << it->first << '\t' << it->second << '\n';
-      //     }
-      //     ofs.close();
-      //   }
-      //   taxdb.readGenomeSizes(fname);
-      // }
+      //
+      for (size_t i = 0; i < DB_filenames.size(); ++i) {
+        const auto fname = DB_filenames[i] + ".counts";
+        cerr << "Reading genome sizes from " << fname << endl;
+        ifstream ifs(fname);
+        bool counts_file_gd = false;
+        if (ifs.good()) {
+          if (ifs.peek() == std::ifstream::traits_type::eof()) {
+            cerr << "Kmer counts file is empty - trying to regenerate ..." <<
+            endl;
+          } else {
+            ifs.close();
+            counts_file_gd = true;
+          }
+        }
+        if (!counts_file_gd) {
+          ofstream ofs(fname);
+          cerr << "Writing kmer counts to " << fname << "... [only once for this database, may take a while] " << endl;
+          auto counts = KrakenDatabases[i]->count_taxons();
+          for (auto it = counts.begin(); it != counts.end(); ++it) {
+            ofs << it->first << '\t' << it->second << '\n';
+          }
+          ofs.close();
+        }
+        taxdb.readGenomeSizes(fname);
+      }
+      //
       managed_ostream report_output(Report_output_files[j], true, true);
 
       TaxReport<uint32_t, READCOUNTS> rep = TaxReport<uint32_t, READCOUNTS>(

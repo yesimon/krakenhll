@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <string.h>
 #include "report-cols.hpp"
 //#include "readcounts.hpp"
 
@@ -262,6 +263,7 @@ class TaxonomyDB {
     void setGenomeSizes(const std::unordered_map<TAXID, uint64_t> & genomeSizes);
     void readGenomeSizes(string file);
     void readGenomeSizes(istream& buf);
+    void readGenomeSizes(char* data);
     void setGenomeSize(const TAXID taxid, const uint64_t genomeSize);
 
     void printReport();
@@ -900,6 +902,28 @@ void TaxonomyDB<TAXID>::readGenomeSizes(istream& buf) {
   cerr << " done" << endl;
 }
 
+template<typename TAXID>
+void TaxonomyDB<TAXID>::readGenomeSizes(char* data) {
+  cerr << "Reading genome sizes...";
+
+  uint32_t taxonomyID;
+  uint64_t size;
+  char* start;
+  start = strtok(data, "\t\n");
+  taxonomyID = strtoull(start, NULL, 10);
+  start = strtok(NULL, "\t\n");
+  size = strtoul(start, NULL, 10);
+  setGenomeSize(taxonomyID, size);
+  while (start != NULL) {
+    start = strtok(NULL, "\t\n");
+    if (start == NULL) break;
+    taxonomyID = strtoull(start, NULL, 10);
+    start = strtok(NULL, "\t\n");
+    size = strtoul(start, NULL, 10);
+    setGenomeSize(taxonomyID, size);
+  }
+  cerr << " done" << endl;
+}
 
 /*
    template<typename TAXID>

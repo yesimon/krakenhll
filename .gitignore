@@ -5,7 +5,7 @@
 /tests/install
 *.dSYM
 \.idea/
-
+src/foo.cpp
 src/set_lcas
 src/classify
 src/build_taxdb
@@ -17,3 +17,4 @@ src/read_uid_mapping
 src/grade_classification
 src/test_hll_on_db
 src/dump_db_kmers
+build/

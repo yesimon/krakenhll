@@ -15,14 +15,14 @@ CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++11 $(FOPENMP) -I./gzst
 PROGS1 = classify classifyExact db_sort set_lcas db_shrink build_taxdb read_uid_mapping count_unique dump_taxdb query_taxdb
 TEST_PROGS = grade_classification test_hll_on_db dump_db_kmers
 PROGS = $(PROGS1)
-LDFLAGS = -L.
+# LDFLAGS = -L.
 LDLIBS=-lz
 
 .PHONY: all install clean debug
 
 all: $(PROGS1)
 
-debug: CXXFLAGS += -g -Og
+debug: CXXFLAGS += -g -Og -U NDEBUG
 debug: $(PROGS1)
 
 allall: $(PROGS1) $(TEST_PROGS)
@@ -64,22 +64,16 @@ make_seqid_to_taxid_map: quickfile.o
 read_uid_mapping: read_uid_mapping.cpp quickfile.o krakenutil.o uid_mapping.o gzstream.o
 
 krakenutil.o: krakenutil.cpp krakenutil.hpp taxdb.hpp report-cols.hpp gzstream/gzstream.h
-	$(CXX) $(CXXFLAGS) -c krakenutil.cpp
 
 krakendb.o: krakendb.cpp krakendb.hpp quickfile.hpp
-	$(CXX) $(CXXFLAGS) -c krakendb.cpp
 
 seqreader.o: seqreader.cpp seqreader.hpp quickfile.hpp
-	$(CXX) $(CXXFLAGS) -c seqreader.cpp
 
 gzstream.o: gzstream/gzstream.C gzstream/gzstream.h
-	$(CXX) $(CXXFLAGS) -c -O gzstream/gzstream.C
+	$(CXX) $(CXXFLAGS) -o gzstream.o -c gzstream/gzstream.C $(LDFLAGS) $(LDLIBS)
 
 quickfile.o: quickfile.cpp quickfile.hpp
-	$(CXX) $(CXXFLAGS) -c quickfile.cpp
 
-uid_mapping.o: krakenutil.hpp uid_mapping.hpp uid_mapping.cpp
-	$(CXX) $(CXXFLAGS) -c uid_mapping.cpp
+uid_mapping.o: uid_mapping.cpp krakenutil.hpp uid_mapping.hpp uid_mapping.cpp
 
-hyperloglogplus.o: hyperloglogplus.hpp hyperloglogplus.cpp
-	$(CXX) $(CXXFLAGS) -c hyperloglogplus.cpp
+hyperloglogplus.o: hyperloglogplus.cpp hyperloglogplus.hpp hyperloglogplus.cpp

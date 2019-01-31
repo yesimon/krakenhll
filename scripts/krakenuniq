@@ -71,6 +71,7 @@ my @classified_outfiles;
 my @outfiles;
 my @report_outfiles;
 my @catdb_files;
+my $ordered_mode = 0;
 my $print_sequence = 0;
 my $uid_mapping = 0;
 my $hll_precision = 12;
@@ -97,6 +98,7 @@ GetOptions(
   "report-files=s" => \@report_outfiles,
   "preload" => \$preload,
   "paired" => \$paired,
+  "ordered" => \$ordered_mode,
   "hll-precision=i", \$hll_precision,
   "exact", \$use_exact_counting,
   "check-names" => \$check_names,
@@ -226,6 +228,7 @@ push @flags, "-f" if $fastq_input && ! $paired;  # merger always outputs FASTA
 # push @flags, "-U", $unclassified_out if defined $unclassified_out;
 # push @flags, "-C", $classified_out if defined $classified_out;
 # push @flags, "-o", $outfile if defined $outfile;
+push @flags, "-O", if $ordered_mode;
 push @flags, "-c", if $only_classified_output;
 push @flags, "-M" if $preload;
 # push @flags, "-r", $report_file if defined $report_file;
@@ -322,78 +325,9 @@ foreach my $report_file (@report_outfiles) {
     close($RF)
 }
 
-print STDERR join(" ", ("exec /bin/bash -c \"exec", $cmd, @flags, @pipe_argvv, "\""));
-# exec join(" ", ("exec /bin/bash -c \"exec", $cmd, @flags, @pipe_argvv, "\""));
-# die "$PROG: exec error: $!\n";
-
-
-# print STDERR "$cmd @flags @ARGV\n";
-# if (defined $report_file) {
-#     my $mycmd = qx/ps -o args= $$/;
-#     open(my $RF, ">", $report_file) or die "Could not open report file for writing";
-#     print $RF "# KrakenUniq v#####=VERSION=##### DATE:$date DB:@db_prefix DB_SIZE:$db_size WD:$wd\n# CL:$mycmd\n";
-#     close($RF)
-# }
-# exec $cmd, @flags, @ARGV;
-# die "$PROG: exec error: $!\n";
-
-# # handle piping for decompression/merging
-# my @pipe_argv;
-# if ($paired) {
-#   my @merge_flags;
-#   push @merge_flags, "--fa" if $fasta_input;
-#   push @merge_flags, "--fq" if $fastq_input;
-#   push @merge_flags, "--gz" if $gunzip;
-#   push @merge_flags, "--bz2" if $bunzip2;
-#   push @merge_flags, "--check-names" if $check_names;
-#   @pipe_argv = ($READ_MERGER, @merge_flags, @ARGV);
-# }
-# elsif ($compressed) {
-#   if ($gunzip) {
-#     @pipe_argv = ("gzip", "-dc", @ARGV);
-#   }
-#   elsif ($bunzip2) {
-#     @pipe_argv = ("bzip2", "-dc", @ARGV);
-#   }
-#   else {
-#     die "$PROG: unrecognized compression program! This is a Kraken bug.\n";
-#   }
-# }
-
-# # if args exist, set up the pipe/fork/exec
-# if (@pipe_argv) {
-#   pipe RD, WR;
-#   my $pid = fork();
-#   if ($pid < 0) {
-#     die "$PROG: fork error: $!\n";
-#   }
-#   if ($pid) {
-#     open STDIN, "<&RD"
-#       or die "$PROG: can't dup stdin to read end of pipe: $!\n";
-#     close RD;
-#     close WR;
-#     @ARGV = ("/dev/fd/0");  # make classifier read from pipe
-#   }
-#   else {
-#     open STDOUT, ">&WR"
-#       or die "$PROG: can't dup stdout to write end of pipe: $!\n";
-#     close RD;
-#     close WR;
-#     exec @pipe_argv
-#       or die "$PROG: can't exec $pipe_argv[0]: $!\n";
-#   }
-# }
-
-# my $cmd = $use_exact_counting? $CLASSIFY_EXACT : $CLASSIFY;
-# print STDERR "$cmd @flags @ARGV\n";
-# if (defined $report_file) {
-#     my $mycmd = qx/ps -o args= $$/;
-#     open(my $RF, ">", $report_file) or die "Could not open report file for writing";
-#     print $RF "# KrakenUniq v#####=VERSION=##### DATE:$date DB:@db_prefix DB_SIZE:$db_size WD:$wd\n# CL:$mycmd\n";
-#     close($RF)
-# }
-# exec $cmd, @flags, @ARGV;
-# die "$PROG: exec error: $!\n";
+# print STDERR join(" ", ("exec /bin/bash -c \"exec", $cmd, @flags, @pipe_argvv, "\""));
+exec join(" ", ("exec /bin/bash -c \"exec", $cmd, @flags, @pipe_argvv, "\""));
+die "$PROG: exec error: $!\n";
 
 sub usage {
   my $exit_code = @_ ? shift : 64;
@@ -423,6 +357,7 @@ Options:
                           suppress normal output
   --only-classified-output
                           Print no Kraken output for unclassified sequences
+  --ordered               Ordered OpenMP mode
   --preload               Loads DB into memory before classification
   --paired                The two filenames provided are paired-end reads
   --check-names           Ensure each pair of reads have names that agree

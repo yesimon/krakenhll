@@ -88,7 +88,11 @@ QuickFile::QuickFile(string filename_str, string mode, size_t size) {
     size_t n_pages = (filesize + page_size - 1) / page_size;
 
     unsigned char* buffer = new unsigned char[n_pages];
+#ifdef __APPLE__
+    mincore(fptr, filesize, (char*) buffer);
+#else
     mincore(fptr, filesize, buffer);
+#endif
     size_t cached_pages = 0;
     for (size_t i = 0; i < n_pages; ++i) {
       if (buffer[i] & 1) {

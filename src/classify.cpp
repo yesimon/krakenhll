@@ -612,12 +612,16 @@ bool classify_sequence(DNASequence &dna, ostringstream &koss,
 
   vector<db_status> db_statuses(KrakenDatabases.size());
 
+  uint64_t kmer_count = 0;
+  uint64_t since_bin_key = 0;
+  uint64_t bin_key_calcs = 0;
   if (dna.seq.size() >= KrakenDatabases[0]->get_k()) {
     size_t n_kmers = dna.seq.size() - KrakenDatabases[0]->get_k() + 1;
     taxa.reserve(n_kmers);
     ambig_list.reserve(n_kmers);
     KmerScanner scanner(dna.seq);
     while ((kmer_ptr = scanner.next_kmer()) != NULL) {
+      kmer_count++;
       taxon = 0;
       if (scanner.ambig_kmer()) {
         // append_hitlist_string(hitlist_string, last_taxon, last_counter,
@@ -631,13 +635,13 @@ bool classify_sequence(DNASequence &dna, ostringstream &koss,
         for (size_t i = 0; i < KrakenDatabases.size(); ++i) {
           uint32_t *val_ptr = KrakenDatabases[i]->kmer_query(
                                                              cannonical_kmer, &db_statuses[i].current_bin_key,
-                                                             &db_statuses[i].current_min_pos, &db_statuses[i].current_max_pos);
+                                                             &db_statuses[i].current_min_pos, &db_statuses[i].current_max_pos,
+                                                             &bin_key_calcs);
           if (val_ptr) {
             taxon = *val_ptr;
             break;
           }
         }
-
         // cerr << "taxon for " << *kmer_ptr << " is " << taxon << endl;
         my_taxon_counts[taxon].add_kmer(cannonical_kmer);
 
@@ -651,6 +655,7 @@ bool classify_sequence(DNASequence &dna, ostringstream &koss,
       // append_hitlist_string(hitlist_string, last_taxon, last_counter, taxon);
     }
   }
+  cout << (float)bin_key_calcs / kmer_count << endl;
 
   uint32_t call = 0;
   if (Map_UIDs) {

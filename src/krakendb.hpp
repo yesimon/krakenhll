@@ -61,6 +61,7 @@ namespace kraken {
     // perform search over last range to speed up queries
     uint32_t *kmer_query(uint64_t kmer, uint64_t *last_bin_key,
                          int64_t *min_pos, int64_t *max_pos,
+                         uint64_t *bin_key_calcs,
                          bool retry_on_failure=true);
 
 

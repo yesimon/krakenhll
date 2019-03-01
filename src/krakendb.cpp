@@ -244,6 +244,7 @@ uint64_t KrakenDB::canonical_representation(uint64_t kmer) {
 // NOTE: retry_on_failure implies all pointer params are non-NULL
 uint32_t *KrakenDB::kmer_query(uint64_t kmer, uint64_t *last_bin_key,
                                int64_t *min_pos, int64_t *max_pos,
+                               uint64_t *bin_key_calcs,
                                bool retry_on_failure)
 {
   int64_t min, max, mid;
@@ -260,6 +261,7 @@ uint32_t *KrakenDB::kmer_query(uint64_t kmer, uint64_t *last_bin_key,
   }
   else {
     b_key = bin_key(kmer);
+    *bin_key_calcs += 1;
     min = index_ptr->at(b_key);
     max = index_ptr->at(b_key + 1) - 1;
     // Invalid min/max values + retry_on_failure means min/max need to be
@@ -298,13 +300,14 @@ uint32_t *KrakenDB::kmer_query(uint64_t kmer, uint64_t *last_bin_key,
   // If they are, we'll update them and search again
   if (retry_on_failure) {
     b_key = bin_key(kmer);
+    *bin_key_calcs += 1;
     // If bin key hasn't changed, search fails
     if (b_key == *last_bin_key)
       return NULL;
     min = index_ptr->at(b_key);
     max = index_ptr->at(b_key + 1) - 1;
     // Recursive call w/ adjusted search params and w/o retry
-    answer = kmer_query(kmer, &b_key, &min, &max, false);
+    answer = kmer_query(kmer, &b_key, &min, &max, bin_key_calcs, false);
     // Update caller's search params due to bin key change
     if (last_bin_key != NULL) {
       *last_bin_key = b_key;
@@ -317,7 +320,7 @@ uint32_t *KrakenDB::kmer_query(uint64_t kmer, uint64_t *last_bin_key,
 
 // Binary search w/in the k-mer's bin
 uint32_t *KrakenDB::kmer_query(uint64_t kmer) {
-  return kmer_query(kmer, NULL, NULL, NULL, false);
+  return kmer_query(kmer, NULL, NULL, NULL, NULL, false);
 }
 
 KrakenDBIndex::KrakenDBIndex() {

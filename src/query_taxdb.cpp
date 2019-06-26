@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
   int optind = parse_command_line(argc, argv);
   uint32_t taxID;
 
-  for (;optind < argc; ++optind) {
+  for (;optind < static_cast<signed>(argc); ++optind) {
     taxID = atoll(argv[optind]);
     process_taxID(taxID);
   }

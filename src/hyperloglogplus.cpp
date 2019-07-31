@@ -24,6 +24,7 @@
 #include<stdexcept>
 #include<iostream>
 #include<fstream>
+#include<sstream>
 #include<cmath>    //log and sqrt
 #include<algorithm> //vector.count
 #include<bitset>
@@ -805,6 +806,54 @@ uint64_t HyperLogLogPlusMinus<uint64_t>::size() const {
     return cardinality();
 }
 
+template<>
+string HyperLogLogPlusMinus<uint64_t>::serialize() const {
+  stringstream out;
+  out << (sparse ? 1 : 0);
+  out << "\t" << (int)p;
+  if (sparse) {
+    for (auto it=sparseList.begin(); it != sparseList.end(); ++it) {
+      out << "\t" << *it;
+    }
+  } else {
+    for (size_t i=0; i < m; ++i) {
+      out << "\t" << (int)M[i];
+    }
+  }
+  return out.str();
+}
+
+template<>
+HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(string& serialized): p(12) {
+  stringstream iss(serialized);
+  iss >> this->sparse;
+  int p;
+  iss >> p;
+  this->p = p;
+  // cout << serialized << endl;
+  // cout << this->sparse << endl;
+  // cout << (int)this->p << endl;
+
+  string line;
+  stringstream ssline(line);
+  if (this->sparse) {
+    getline(iss, line);
+    uint32_t encoded;
+    while (ssline >> encoded) {
+      (this->sparseList).insert(encoded);
+    }
+  } else {
+    (this->M).resize(this->m);
+    getline(iss, line);
+    int rank;
+    size_t i = 0;
+    while (ssline >> rank) {
+      this->M[i] = rank;
+      ++i;
+    }
+  }
+}
+
 /////////////////////////////////////////////////////////////////////
 // Hash and other functions
 
@@ -875,5 +924,3 @@ struct NoHash {
 
 // Always compile 64-bit HLL class
 template class HyperLogLogPlusMinus<uint64_t>;
-
-

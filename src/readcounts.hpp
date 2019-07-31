@@ -36,6 +36,8 @@ namespace kraken {
     void incrementReadCount() { ++n_reads; }
     uint64_t kmerCount() const { return n_kmers; }
     uint64_t uniqueKmerCount() const; // to be implemented for each CONTAINER
+    void serialize(ostringstream& os) const;
+    string serialize() const;
 
     ReadCounts() : n_reads(0), n_kmers(0) {
     }
@@ -51,6 +53,13 @@ namespace kraken {
     }
 
     ReadCounts(ReadCounts&& other) : n_reads(other.n_reads), n_kmers(other.n_kmers), kmers(std::move(other.kmers)) {
+    }
+
+    ReadCounts(string serialized) {
+      stringstream iss(serialized);
+      iss >> this->n_reads;
+      iss >> this->n_kmers;
+      this->kmers(iss.str());
     }
 
     ReadCounts& operator=(const ReadCounts& other) {
@@ -128,5 +137,22 @@ namespace kraken {
     return(kmers.size());
   }
 
+  template<typename T>
+  void ReadCounts< T >::serialize(ostringstream& os) const {
+    os << n_reads << "\t";
+    os << n_kmers << "\t";
+    os << kmers.serialize();
+  }
+
+  template<typename T>
+  string ReadCounts< T >::serialize() const {
+    string out;
+    out += to_string(n_reads);
+    out += "\t";
+    out += to_string(n_kmers);
+    out += "\t";
+    out += kmers.serialize();
+    return out;
+  }
 }
 #endif

@@ -31,6 +31,7 @@ my $fasta_input = 0;
 my $fastq_input = 0;
 my $gunzip = 0;
 my $bunzip2 = 0;
+my $unzstd = 0;
 my $check_names = 0;
 
 GetOptions(
@@ -38,6 +39,7 @@ GetOptions(
   "fq" => \$fastq_input,
   "gz" => \$gunzip,
   "bz2" => \$bunzip2,
+  "zstd" => \$unzstd,
   "check-names" => \$check_names
 );
 
@@ -53,7 +55,7 @@ for my $file (@ARGV) {
   }
 }
 
-my $compressed = $gunzip || $bunzip2;
+my $compressed = $gunzip || $bunzip2 || $unzstd;
 if ($gunzip && $bunzip2) {
   die "$PROG: can't use both gzip and bzip2 compression flags\n";
 }
@@ -75,7 +77,12 @@ elsif ($bunzip2) {
   open $fh2, "-|", "bunzip2", "-c", $ARGV[1]
     or die "$PROG: can't open bunzip2 pipe with $ARGV[1]: $!\n";
 }
-else {
+elsif ($unzstd) {
+  open $fh1, "-|", "zstd", "-d", "-c", $ARGV[0]
+    or die "$PROG: can't open zstd pipe with $ARGV[0]: $!\n";
+  open $fh2, "-|", "zstd", "-d", "-c", $ARGV[1]
+    or die "$PROG: can't open zstd pipe with $ARGV[1]: $!\n";
+} else {
   open $fh1, "<", $ARGV[0]
     or die "$PROG: can't open $ARGV[0]: $!\n";
   open $fh2, "<", $ARGV[1]

@@ -12,7 +12,7 @@ endif
 
 
 CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++11 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
-PROGS1 = classify classifyExact db_sort set_lcas db_shrink build_taxdb read_uid_mapping count_unique dump_taxdb query_taxdb
+PROGS1 = classify db_sort set_lcas db_shrink build_taxdb read_uid_mapping count_unique dump_taxdb query_taxdb
 TEST_PROGS = grade_classification test_hll_on_db dump_db_kmers
 PROGS = $(PROGS1)
 # LDFLAGS = -L.

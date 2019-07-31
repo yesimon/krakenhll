@@ -59,6 +59,7 @@ my $preload = 0;
 my $lock_memory = 0;
 my $gunzip = 0;
 my $bunzip2 = 0;
+my $unzstd = 0;
 my $paired = 0;
 my $check_names = 0;
 my $only_classified_output = 0;
@@ -76,6 +77,7 @@ my $print_sequence = 0;
 my $uid_mapping = 0;
 my $hll_precision = 12;
 my $use_exact_counting = 0;
+my $store_hll = 0;
 
 GetOptions(
   "help" => \&display_help,
@@ -100,10 +102,12 @@ GetOptions(
   "paired" => \$paired,
   "ordered" => \$ordered_mode,
   "hll-precision=i", \$hll_precision,
+  "hll-out" => \$store_hll,
   "exact", \$use_exact_counting,
   "check-names" => \$check_names,
   "gzip-compressed" => \$gunzip,
   "bzip2-compressed" => \$bunzip2,
+  "zstd-compressed" => \$unzstd,
   "uid-mapping" => \$uid_mapping,
   "only-classified-output" => \$only_classified_output,
 ) or die $!;
@@ -235,6 +239,7 @@ push @flags, "-M" if $preload;
 push @flags, "-a", $taxdb;
 push @flags, "-s" if $print_sequence;
 push @flags, "-p", $hll_precision;
+push @flags, "-H" if $store_hll;
 if ($uid_mapping) {
   my $uid_mapping_file = "$db_prefix[0]/uid_to_taxid.map";
   if (!-f $uid_mapping_file) {
@@ -291,6 +296,7 @@ foreach (my $i = 0; $i < @ARGV; $i++) {
         push @merge_flags, "--fq" if $fastq_input;
         push @merge_flags, "--gz" if $gunzip;
         push @merge_flags, "--bz2" if $bunzip2;
+        push @merge_flags, "--zstd" if $unzstd;
         push @merge_flags, "--check-names" if $check_names;
         @pipe_argv = ("read_merger.pl", @merge_flags, @ARGV[$i, $i+1]);
         $i++;
@@ -304,7 +310,9 @@ foreach (my $i = 0; $i < @ARGV; $i++) {
         elsif ($bunzip2) {
             @pipe_argv = ("bzip2", "-dc", $ARGV[$i]);
         }
-        else {
+        elsif ($unzstd) {
+            @pipe_argv = ("zstd", "-dc", $ARGV[$i]);
+        } else {
             die "$PROG: unrecognized compression program! This is a Kraken bug.\n";
         }
     } else {
@@ -344,6 +352,7 @@ Options:
   --fastq-input           Input is FASTQ format
   --gzip-compressed       Input is gzip compressed
   --bzip2-compressed      Input is bzip2 compressed
+  --zstd-compressed       Input is zstd compressed
   --hll-precision INT     Precision for HyperLogLog k-mer cardinality estimation, between 10 and 18 (default: $hll_precision)
   --exact                 Compute exact cardinality instead of estimate (slower, requires memory proportional to cardinality!)
   --quick                 Quick operation (use first hit or hits)
@@ -353,6 +362,8 @@ Options:
                           Print unclassified sequences to filename
   --classified-out FILENAME
                           Print classified sequences to filename
+  --hll-out FILENAME
+                          Print HLL counters to filename - useful for merging multiple reports
   --output FILENAME       Print output to filename (default: stdout); "off" will
                           suppress normal output
   --only-classified-output

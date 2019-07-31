@@ -84,6 +84,7 @@ bool Only_classified_kraken_output = false;
 bool Print_sequence = false;
 bool Print_Progress = true;
 bool full_report = false;
+bool Store_hll = false;
 
 bool Map_UIDs = false;
 string UID_to_TaxID_map_filename;
@@ -323,7 +324,7 @@ int main(int argc, char **argv) {
         taxdb.readGenomeSizes(fname);
       }
       //
-      managed_ostream report_output(Report_output_files[j], true, true);
+      managed_ostream report_output(Report_output_files[j], true, false);
 
       TaxReport<uint32_t, READCOUNTS> rep = TaxReport<uint32_t, READCOUNTS>(
                                                                             *report_output, taxdb, taxon_counts, false);
@@ -337,6 +338,15 @@ int main(int argc, char **argv) {
                 "dup", "cov", "taxID", "rank",
                 "taxName"});
         }
+        if (Store_hll) {
+            managed_ostream hll_output(Report_output_files[j] + ".hll", true, false);
+            for (auto it = taxon_counts.begin(); it != taxon_counts.end(); ++it) {
+              cout << it->first << endl;
+              *hll_output << it->first << "\t";
+              *hll_output << it->second.serialize() << endl;
+            }
+        }
+
       } else {
         rep.setReportCols(vector<string>{"%", "reads", "taxReads", "taxID",
               "rank", "taxName"});
@@ -761,7 +771,7 @@ void parse_command_line(int argc, char **argv) {
 
   if (argc > 1 && strcmp(argv[1], "-h") == 0)
     usage(0);
-  while ((opt = getopt(argc, argv, "d:i:D:t:u:n:m:o:qOfcC:U:Ma:r:sI:p:")) !=
+  while ((opt = getopt(argc, argv, "d:i:D:t:u:n:m:o:HqOfcC:U:Ma:r:sI:p:")) !=
          -1) {
     switch (opt) {
     case 'd':
@@ -817,6 +827,9 @@ void parse_command_line(int argc, char **argv) {
       Print_unclassified = true;
       // Unclassified_output_file = optarg;
       Unclassified_output_files.push_back(optarg);
+      break;
+    case 'H':
+      Store_hll = true;
       break;
     case 'o':
       // Kraken_output_file = optarg;
@@ -888,6 +901,7 @@ void usage(int exit_code) {
        << "  -m #             Minimum hit count (ignored w/o -q)" << endl
        << "  -C filename      Print classified sequences" << endl
        << "  -U filename      Print unclassified sequences" << endl
+       << "  -H filename      Print HLL counters per-taxon" << endl
        << "  -f               Input is in FASTQ format" << endl
        << "  -c               Only include classified reads in output" << endl
        << "  -M               Preload database files" << endl

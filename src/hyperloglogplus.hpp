@@ -87,6 +87,7 @@ public:
   HyperLogLogPlusMinus(HyperLogLogPlusMinus<HASH>&& other);
   HyperLogLogPlusMinus<HASH>& operator= (HyperLogLogPlusMinus<HASH>&& other);
   HyperLogLogPlusMinus<HASH>& operator= (const HyperLogLogPlusMinus<HASH>& other);
+  HyperLogLogPlusMinus(string& serialized);
   ~HyperLogLogPlusMinus() {};
   void reset(); // Note: sets sparse=true
 
@@ -100,6 +101,9 @@ public:
   void merge(const HyperLogLogPlusMinus<HASH>& other);
   HyperLogLogPlusMinus<HASH>& operator+=(HyperLogLogPlusMinus<HASH>&& other);
   HyperLogLogPlusMinus<HASH>& operator+=(const HyperLogLogPlusMinus<HASH>& other);
+
+  // Serialize the HLL data structure
+  string serialize() const;
 
   // Calculate cardinality estimates
   uint64_t cardinality() const; // returns ertlCardinality()

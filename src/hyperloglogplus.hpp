@@ -82,7 +82,7 @@ public:
   bool use_n_observed = true; // return min(estimate, n_observed) instead of estimate
 
   // Construct HLL with precision bits
-  HyperLogLogPlusMinus(uint8_t precision=12, bool sparse=true, HASH (*bit_mixer) (uint64_t) = murmurhash3_finalizer);
+  hyperloglogplusminus(uint8_t precision=12, bool sparse=true, HASH (*bit_mixer) (uint64_t) = murmurhash3_finalizer);
   HyperLogLogPlusMinus(const HyperLogLogPlusMinus<HASH>& other);
   HyperLogLogPlusMinus(HyperLogLogPlusMinus<HASH>&& other);
   HyperLogLogPlusMinus<HASH>& operator= (HyperLogLogPlusMinus<HASH>&& other);

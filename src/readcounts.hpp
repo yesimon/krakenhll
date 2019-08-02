@@ -59,7 +59,9 @@ namespace kraken {
       stringstream iss(serialized);
       iss >> this->n_reads;
       iss >> this->n_kmers;
-      this->kmers(iss.str());
+      string iss_left(iss.str());
+      CONTAINER my_kmers(iss_left);
+      this->kmers = my_kmers;
     }
 
     ReadCounts& operator=(const ReadCounts& other) {

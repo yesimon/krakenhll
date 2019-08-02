@@ -428,6 +428,8 @@ double tau(double x) {
 template<>
 HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(uint8_t precision, bool sparse, uint64_t  (*bit_mixer) (uint64_t)):
       p(precision), m(1<<precision), sparse(sparse), bit_mixer(bit_mixer) {
+  std::cout << this->p << std::endl;
+  std::cout << precision << std::endl;
     if (precision > 18 || precision < 4) {
           throw std::invalid_argument("precision (number of register = 2^precision) must be between 4 and 18");
     }
@@ -830,9 +832,6 @@ HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(string& serialized): p(12) 
   int p;
   iss >> p;
   this->p = p;
-  // cout << serialized << endl;
-  // cout << this->sparse << endl;
-  // cout << (int)this->p << endl;
 
   string line;
   stringstream ssline(line);

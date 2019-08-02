@@ -11,7 +11,7 @@ FOPENMP=
 endif
 
 
-CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++11 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
+CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++14 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
 PROGS1 = classify db_sort set_lcas db_shrink build_taxdb read_uid_mapping count_unique dump_taxdb query_taxdb
 TEST_PROGS = grade_classification test_hll_on_db dump_db_kmers
 PROGS = $(PROGS1)
@@ -48,6 +48,10 @@ count_unique: hyperloglogplus.o seqreader.o krakenutil.o gzstream.o
 test_count_unique: hyperloglogplus.o 
 
 test_hll_on_db: krakendb.o hyperloglogplus.o quickfile.o
+
+test_hll_serialize: hyperloglogplus.o
+
+merge_hll: hyperloglogplus.o krakendb.o quickfile.o krakenutil.o gzstream.o
 
 dump_db_kmers: krakendb.o quickfile.o
 

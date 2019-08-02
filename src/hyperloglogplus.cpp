@@ -428,6 +428,7 @@ double tau(double x) {
 template<>
 HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(uint8_t precision, bool sparse, uint64_t  (*bit_mixer) (uint64_t)):
       p(precision), m(1<<precision), sparse(sparse), bit_mixer(bit_mixer) {
+  // std::cout << (int)precision << std::endl;
     if (precision > 18 || precision < 4) {
           throw std::invalid_argument("precision (number of register = 2^precision) must be between 4 and 18");
     }
@@ -589,15 +590,19 @@ void HyperLogLogPlusMinus<T>::merge(HyperLogLogPlusMinus<T>&& other) {
     if (this->p != other.p) {
       throw std::invalid_argument("precisions must be equal");
     }
-    if (other.n_observed == 0)
+    if (other.n_observed == 0) {
+      cout << "other nobserved 0" << endl;
       return;
+    }
 
     if (this->n_observed == 0) {
+      cout << "this nobserved 0" << endl;
       n_observed = other.n_observed;
       sparse = other.sparse;
       sparseList = std::move(other.sparseList);
       M = std::move(other.M);
     } else {
+      cout << "proper merge" << endl;
       n_observed += other.n_observed;
       if (this->sparse && other.sparse) {
         // this->merge(static_cast<const HyperLogLogPlusMinus<T>&>(other));
@@ -630,16 +635,23 @@ void HyperLogLogPlusMinus<T>::merge(const HyperLogLogPlusMinus<T>& other) {
     if (this->p != other.p) {
       throw std::invalid_argument("precisions must be equal");
     }
-    if (other.n_observed == 0)
+    cout << (int)other.sparse << endl;
+    if (other.n_observed == 0) {
+      cout << "other nobserved 0" << endl;
       return;
+    }
+    // if (other.n_observed == 0)
+    //   return;
 
     if (this->n_observed == 0) {
+      cout << "this nobserved 0" << endl;
       // TODO: Make this more efficient when other is disowned
       n_observed = other.n_observed;
       sparse = other.sparse;
       sparseList = other.sparseList;
       M = other.M;
     } else {
+      cout << "proper merge" << endl;
       n_observed += other.n_observed;
       if (this->sparse && other.sparse) {
         // consider using addHashToSparseList(this->sparseList, val, pPrime) and checking for sizes
@@ -824,30 +836,37 @@ string HyperLogLogPlusMinus<uint64_t>::serialize() const {
 }
 
 template<>
+void HyperLogLogPlusMinus<uint64_t>::set_nObserved(uint64_t n) {
+  n_observed = n;
+}
+
+template<>
 HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(string& serialized): p(12) {
   stringstream iss(serialized);
   iss >> this->sparse;
   int p;
   iss >> p;
+  iss >> ws;
   this->p = p;
-  // cout << serialized << endl;
-  // cout << this->sparse << endl;
-  // cout << (int)this->p << endl;
 
   string line;
-  stringstream ssline(line);
+  stringstream ssline;
   if (this->sparse) {
     getline(iss, line);
+    ssline.str(line);
     uint32_t encoded;
-    while (ssline >> encoded) {
+    while (!ssline.eof()) {
+      ssline >> encoded;
       (this->sparseList).insert(encoded);
     }
   } else {
     (this->M).resize(this->m);
     getline(iss, line);
+    ssline.str(line);
     int rank;
     size_t i = 0;
-    while (ssline >> rank) {
+    while (!ssline.eof()) {
+      ssline >> rank;
       this->M[i] = rank;
       ++i;
     }

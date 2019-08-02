@@ -117,6 +117,8 @@ public:
 
   uint64_t nObserved() const;
 
+  void set_nObserved(uint64_t);
+
 private:
   void switchToNormalRepresentation();
   void addToRegisters(const SparseListType &sparseList);

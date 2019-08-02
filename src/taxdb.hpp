@@ -1002,6 +1002,7 @@ TaxReport<TAXID,READCOUNTS>::TaxReport(std::ostream& reportOfb, const TaxonomyDB
     auto cit = _children.begin();
     advance(cit, i);
     READCOUNTS rc = *(cit->second.front());
+    // cout << "rc " << rc.kmerCount() << endl;
     for (size_t j = 1; j < cit->second.size(); ++j)
        rc += *(cit->second[j]);
 

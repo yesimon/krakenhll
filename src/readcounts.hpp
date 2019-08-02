@@ -45,6 +45,7 @@ namespace kraken {
 
     ReadCounts(uint64_t _n_reads, uint64_t _n_kmers, const CONTAINER& _kmers) :
             n_reads(_n_reads), n_kmers(_n_kmers), kmers(_kmers) {
+      kmers.set_nObserved(n_kmers);
     }
 
     //ReadCounts(const ReadCounts& other) = delete;
@@ -57,9 +58,14 @@ namespace kraken {
 
     ReadCounts(string serialized) {
       stringstream iss(serialized);
-      iss >> this->n_reads;
-      iss >> this->n_kmers;
-      this->kmers(iss.str());
+      iss >> n_reads;
+      iss >> n_kmers;
+      iss >> ws;
+      string iss_left;
+      getline(iss, iss_left);
+      CONTAINER kmers(iss_left);
+      cout << "nobserved: " << n_kmers << endl;
+      kmers.set_nObserved(n_kmers);
     }
 
     ReadCounts& operator=(const ReadCounts& other) {
@@ -83,6 +89,7 @@ namespace kraken {
     }
 
     ReadCounts& operator+=(const ReadCounts& other) {
+      cout << "merge" << endl;
       n_reads += other.n_reads;
       n_kmers += other.n_kmers;
       kmers += other.kmers;

@@ -341,7 +341,6 @@ int main(int argc, char **argv) {
         if (Store_hll) {
             managed_ostream hll_output(Report_output_files[j] + ".hll", true, false);
             for (auto it = taxon_counts.begin(); it != taxon_counts.end(); ++it) {
-              cout << it->first << endl;
               *hll_output << it->first << "\t";
               *hll_output << it->second.serialize() << endl;
             }

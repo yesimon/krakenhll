@@ -38,6 +38,7 @@ namespace kraken {
     uint64_t uniqueKmerCount() const; // to be implemented for each CONTAINER
     void serialize(ostringstream& os) const;
     string serialize() const;
+    void deserialize(string& serialized);
 
     ReadCounts() : n_reads(0), n_kmers(0) {
     }
@@ -45,6 +46,7 @@ namespace kraken {
 
     ReadCounts(uint64_t _n_reads, uint64_t _n_kmers, const CONTAINER& _kmers) :
             n_reads(_n_reads), n_kmers(_n_kmers), kmers(_kmers) {
+      kmers.set_nObserved(n_kmers);
     }
 
     //ReadCounts(const ReadCounts& other) = delete;
@@ -55,13 +57,8 @@ namespace kraken {
     ReadCounts(ReadCounts&& other) : n_reads(other.n_reads), n_kmers(other.n_kmers), kmers(std::move(other.kmers)) {
     }
 
-    ReadCounts(string serialized) {
-      stringstream iss(serialized);
-      iss >> this->n_reads;
-      iss >> this->n_kmers;
-      string iss_left(iss.str());
-      CONTAINER my_kmers(iss_left);
-      this->kmers = my_kmers;
+    ReadCounts(string& serialized) {
+      deserialize(serialized);
     }
 
     ReadCounts& operator=(const ReadCounts& other) {
@@ -156,5 +153,18 @@ namespace kraken {
     out += kmers.serialize();
     return out;
   }
+
+  template<typename T>
+  void ReadCounts< T >::deserialize(string& serialized) {
+    stringstream iss(serialized);
+    iss >> n_reads;
+    iss >> n_kmers;
+    iss >> ws;
+    string iss_left;
+    getline(iss, iss_left);
+    kmers.deserialize(iss_left);
+    kmers.set_nObserved(n_kmers);
+  }
+
 }
 #endif

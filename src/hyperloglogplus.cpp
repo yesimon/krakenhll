@@ -428,8 +428,6 @@ double tau(double x) {
 template<>
 HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(uint8_t precision, bool sparse, uint64_t  (*bit_mixer) (uint64_t)):
       p(precision), m(1<<precision), sparse(sparse), bit_mixer(bit_mixer) {
-  std::cout << this->p << std::endl;
-  std::cout << precision << std::endl;
     if (precision > 18 || precision < 4) {
           throw std::invalid_argument("precision (number of register = 2^precision) must be between 4 and 18");
     }
@@ -591,8 +589,9 @@ void HyperLogLogPlusMinus<T>::merge(HyperLogLogPlusMinus<T>&& other) {
     if (this->p != other.p) {
       throw std::invalid_argument("precisions must be equal");
     }
-    if (other.n_observed == 0)
+    if (other.n_observed == 0) {
       return;
+    }
 
     if (this->n_observed == 0) {
       n_observed = other.n_observed;
@@ -632,8 +631,11 @@ void HyperLogLogPlusMinus<T>::merge(const HyperLogLogPlusMinus<T>& other) {
     if (this->p != other.p) {
       throw std::invalid_argument("precisions must be equal");
     }
-    if (other.n_observed == 0)
+    if (other.n_observed == 0) {
       return;
+    }
+    // if (other.n_observed == 0)
+    //   return;
 
     if (this->n_observed == 0) {
       // TODO: Make this more efficient when other is disowned
@@ -826,31 +828,46 @@ string HyperLogLogPlusMinus<uint64_t>::serialize() const {
 }
 
 template<>
-HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(string& serialized): p(12) {
+void HyperLogLogPlusMinus<uint64_t>::deserialize(string& serialized) {
   stringstream iss(serialized);
-  iss >> this->sparse;
+  iss >> sparse;
   int p;
   iss >> p;
+  iss >> ws;
   this->p = p;
 
   string line;
-  stringstream ssline(line);
-  if (this->sparse) {
+  stringstream ssline;
+  if (sparse) {
     getline(iss, line);
+    ssline.str(line);
     uint32_t encoded;
-    while (ssline >> encoded) {
-      (this->sparseList).insert(encoded);
+    while (!ssline.eof()) {
+      ssline >> encoded;
+      (sparseList).insert(encoded);
     }
   } else {
-    (this->M).resize(this->m);
+    M.resize(m);
     getline(iss, line);
+    ssline.str(line);
     int rank;
     size_t i = 0;
-    while (ssline >> rank) {
-      this->M[i] = rank;
+    while (!ssline.eof()) {
+      ssline >> rank;
+      M[i] = rank;
       ++i;
     }
   }
+}
+
+template<>
+void HyperLogLogPlusMinus<uint64_t>::set_nObserved(uint64_t n) {
+  n_observed = n;
+}
+
+template<>
+HyperLogLogPlusMinus<uint64_t>::HyperLogLogPlusMinus(string& serialized): p(12){
+  deserialize(serialized);
 }
 
 /////////////////////////////////////////////////////////////////////

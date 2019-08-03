@@ -261,7 +261,7 @@ class TaxonomyDB {
     int isBelowInTree(TAXID upper, TAXID lower) const;
 
     void setGenomeSizes(const std::unordered_map<TAXID, uint64_t> & genomeSizes);
-    void readGenomeSizes(string file);
+    void readGenomeSizes(const string& file);
     void readGenomeSizes(istream& buf);
     void readGenomeSizes(char* data);
     void setGenomeSize(const TAXID taxid, const uint64_t genomeSize);
@@ -868,15 +868,15 @@ void TaxonomyDB<TAXID>::setGenomeSize(const TAXID taxid, const uint64_t genomeSi
 }
 
 template<typename TAXID>
-void TaxonomyDB<TAXID>::readGenomeSizes(string file) {
+void TaxonomyDB<TAXID>::readGenomeSizes(const string& filename) {
   //for (auto entry_it = entries.begin(); entry_it != entries.end(); ++entry_it) {
   //  entry_it->second.genomeSize = 0;
   //  entry_it->second.genomeSizeOfChildren = 0;
   //}
-  cerr << "Reading genome sizes from " << file << " ...";
-  std::ifstream inFile(file);
+  cerr << "Reading genome sizes from " << filename << " ...";
+  std::ifstream inFile(filename);
   if (!inFile.is_open())
-    throw std::runtime_error("unable to open file " + file);
+    throw std::runtime_error("unable to open file " + filename);
   TAXID taxonomyID;
   uint64_t size;
   while (!inFile.eof()) {
@@ -1002,6 +1002,7 @@ TaxReport<TAXID,READCOUNTS>::TaxReport(std::ostream& reportOfb, const TaxonomyDB
     auto cit = _children.begin();
     advance(cit, i);
     READCOUNTS rc = *(cit->second.front());
+    // cout << "rc " << rc.kmerCount() << endl;
     for (size_t j = 1; j < cit->second.size(); ++j)
        rc += *(cit->second[j]);
 

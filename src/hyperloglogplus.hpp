@@ -82,7 +82,7 @@ public:
   bool use_n_observed = true; // return min(estimate, n_observed) instead of estimate
 
   // Construct HLL with precision bits
-  hyperloglogplusminus(uint8_t precision=12, bool sparse=true, HASH (*bit_mixer) (uint64_t) = murmurhash3_finalizer);
+  HyperLogLogPlusMinus(uint8_t precision=12, bool sparse=true, HASH (*bit_mixer) (uint64_t) = murmurhash3_finalizer);
   HyperLogLogPlusMinus(const HyperLogLogPlusMinus<HASH>& other);
   HyperLogLogPlusMinus(HyperLogLogPlusMinus<HASH>&& other);
   HyperLogLogPlusMinus<HASH>& operator= (HyperLogLogPlusMinus<HASH>&& other);
@@ -104,6 +104,7 @@ public:
 
   // Serialize the HLL data structure
   string serialize() const;
+  void deserialize(string& serialized);
 
   // Calculate cardinality estimates
   uint64_t cardinality() const; // returns ertlCardinality()
@@ -116,6 +117,8 @@ public:
   uint64_t flajoletCardinality(bool use_sparse_precision = true) const;
 
   uint64_t nObserved() const;
+
+  void set_nObserved(uint64_t);
 
 private:
   void switchToNormalRepresentation();

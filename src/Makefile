@@ -1,6 +1,6 @@
 CXX = g++
 FOPENMP?=-fopenmp
-NDEBUG=-D NDEBUG
+# NDEBUG=-D NDEBUG
 
 is_fopenmp_supported := $(shell touch foo.cpp && $(CXX) -fopenmp -c foo.cpp -o foo.o &> /dev/null && printf 'yes' || printf 'no'; rm -f foo.c foo.o)
 
@@ -11,7 +11,8 @@ FOPENMP=
 endif
 
 
-CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++14 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
+# CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -O2 -std=c++14 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
+CXXFLAGS = -Wall -Wextra -Wfatal-errors -pipe -g -Og -std=c++14 $(FOPENMP) -I./gzstream $(NDEBUG) ${CPPFLAGS}
 PROGS1 = classify db_sort set_lcas db_shrink build_taxdb read_uid_mapping count_unique dump_taxdb query_taxdb
 TEST_PROGS = grade_classification test_hll_on_db dump_db_kmers
 PROGS = $(PROGS1)
